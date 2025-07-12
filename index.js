@@ -1,13 +1,12 @@
 const BMKGScraper = require('./src/scraper');
 const config = require('./config');
+const log = require('./src/logger');
 
 (async () => {
-  console.log('============================================');
-  console.log('🚀 BMKG Data Downloader Dimulai');
-  console.log('============================================');
-  console.log(`Target Kabupaten: ${config.TARGET_KABUPATEN.nama} (ID: ${config.TARGET_KABUPATEN.id})`);
-  console.log(`Rentang Waktu  : ${config.BULAN_AWAL}/${config.TAHUN_AWAL} - ${config.BULAN_AKHIR}/${config.TAHUN_AKHIR}`);
-  console.log('--------------------------------------------');
+  log.header('BMKG Data Downloader Dimulai');
+  log.info(`Target         : ${config.TARGET_KABUPATEN.nama} (ID: ${config.TARGET_KABUPATEN.id})`);
+  log.info(`Rentang Waktu  : ${config.BULAN_AWAL}/${config.TAHUN_AWAL} - ${config.BULAN_AKHIR}/${config.TAHUN_AKHIR}`);
+  log.divider();
 
   const scraper = new BMKGScraper(config);
   const failedDownloads = [];
@@ -31,21 +30,20 @@ const config = require('./config');
     }
 
   } catch (error) {
-    console.error('❌ Terjadi kesalahan fatal:', error);
+    log.error('Terjadi kesalahan fatal:', error);
   } finally {
     await scraper.close();
-    console.log('\n--------------------------------------------');
-    console.log('🏁 Proses Selesai.');
+    log.header('Proses Selesai.');
   }
 
   // Laporan Hasil Akhir
   if (failedDownloads.length > 0) {
-    console.log('\n❌ Daftar unduhan yang GAGAL:');
+    log.error('Ditemukan beberapa unduhan yang GAGAL:');
     failedDownloads.forEach(({ year, month, reason }) => {
-      console.log(`- ${month} ${year} (Alasan: ${reason})`);
+      console.log(chalk.red(`  - ${month} ${year} (Alasan: ${reason})`));
     });
   } else {
-    console.log('\n🎉 Semua data berhasil diunduh tanpa ada kegagalan!');
+    log.succeed('Semua data berhasil diunduh tanpa ada kegagalan!');
   }
-  console.log('============================================');
+  log.divider();
 })();

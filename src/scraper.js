@@ -1,6 +1,7 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
+const log = require('./logger');
 
 // Daftar nama bulan dalam bahasa Indonesia
 const BULAN_INDONESIA = [
@@ -39,27 +40,27 @@ class BMKGScraper {
     if (fs.existsSync(this.config.COOKIE_PATH)) {
       const cookies = JSON.parse(fs.readFileSync(this.config.COOKIE_PATH));
       await this.page.setCookie(...cookies);
-      console.log('✅ Cookie dimuat dari file.');
+      log.succeed('Cookie dimuat dari file.');
       return;
     }
 
-    console.log('🔐 Login manual dibutuhkan, membuka halaman login...');
+    log.info('Login manual dibutuhkan, membuka halaman login...');
     await this.page.goto('https://dataonline.bmkg.go.id/login', { waitUntil: 'networkidle2' });
-    
-    console.log('➡️ Silakan login secara manual di browser. Skrip akan lanjut setelah Anda berhasil masuk.');
+
+    log.info('Silakan login secara manual di browser. Skrip akan lanjut setelah Anda berhasil masuk.');
     await this.page.waitForSelector('#kt_app_sidebar_menu_wrapper', { timeout: 0 });
-    
-    console.log('✅ Login terdeteksi, menyimpan cookie...');
+
+    log.succeed('Login terdeteksi, menyimpan cookie...');
     const cookies = await this.page.cookies();
     fs.writeFileSync(this.config.COOKIE_PATH, JSON.stringify(cookies, null, 2));
-    console.log('✅ Cookie berhasil disimpan.');
+    log.succeed('Cookie berhasil disimpan.');
   }
 
   async downloadDataForMonth(year, month) {
     const namaBulan = BULAN_INDONESIA[month];
     const endDateObj = new Date(year, month, 0); 
     
-    console.log(`\n🔄 Memproses data untuk: ${namaBulan.toUpperCase()} ${year}`);
+    log.start(`Memproses data untuk: ${namaBulan.toUpperCase()} ${year}`);
 
     try {
       await this.page.goto('https://dataonline.bmkg.go.id/data-harian', { waitUntil: 'networkidle2' });
@@ -86,7 +87,7 @@ class BMKGScraper {
 
       const startDMY = `01-${String(month).padStart(2, '0')}-${year}`;
       const endDMY = `${String(endDateObj.getDate()).padStart(2, '0')}-${String(month).padStart(2, '0')}-${year}`;
-      console.log(`- Mengatur rentang tanggal: ${startDMY} → ${endDMY}`);
+      log.update(`Mengatur tanggal ${startDMY} → ${endDMY}`);
 
       await this.page.waitForSelector('#from', { visible: true });
       await this.page.focus('#from');
@@ -118,13 +119,14 @@ class BMKGScraper {
 
       const downloadBtn = await this.page.waitForSelector('#excelButton', { visible: true, timeout: 20000 }).catch(() => null);
       if (!downloadBtn) {
-        console.warn('⚠️ Tombol unduh (Excel) tidak ditemukan. Mungkin tidak ada data untuk periode ini.');
+        log.fail('Tombol unduh (Excel) tidak ditemukan. Mungkin tidak ada data untuk periode ini.');
         return { success: false, year, month: namaBulan, reason: 'Tombol unduh tidak ada' };
       }
 
       const filesBeforeDownload = new Set(fs.readdirSync(this.config.DOWNLOAD_DIR));
       await downloadBtn.click();
-      console.log('📥 Mengunduh file XLS...');
+      log.update(`📥 Mengunduh file untuk ${namaBulan.toUpperCase()} ${year}...`);
+
 
       // --- Menunggu dan Mengganti Nama File ---
       const downloadedFile = await this.waitForDownload(filesBeforeDownload);
@@ -134,14 +136,14 @@ class BMKGScraper {
           path.join(this.config.DOWNLOAD_DIR, downloadedFile),
           path.join(this.config.DOWNLOAD_DIR, newFileName)
         );
-        console.log(`✅ Berhasil disimpan sebagai: ${newFileName}`);
+        log.succeed(`✅ Berhasil disimpan sebagai: ${newFileName}`);
         return { success: true, file: newFileName };
       } else {
-        console.warn('⚠️ Gagal mendeteksi file yang baru diunduh.');
+        log.fail('⚠️ Gagal mendeteksi file yang baru diunduh.');
         return { success: false, year, month: namaBulan, reason: 'File tidak terdeteksi setelah unduhan' };
       }
     } catch (error) {
-      console.error(`❌ Terjadi error saat memproses ${namaBulan} ${year}: ${error.message}`);
+      log.fail(`❌ Terjadi error saat memproses ${namaBulan} ${year}: ${error.message}`);
       return { success: false, year, month: namaBulan, reason: error.message };
     }
   }
