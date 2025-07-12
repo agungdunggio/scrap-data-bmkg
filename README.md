@@ -52,10 +52,6 @@ Sebelum menjalankan skrip, buka file `config.js` dan sesuaikan dengan kebutuhan 
 1.  Buka terminal atau command prompt di direktori proyek.
 2.  Jalankan perintah:
     ```bash
-    npm start
-    ```
-    atau
-    ```bash
     node index.js
     ```
 
