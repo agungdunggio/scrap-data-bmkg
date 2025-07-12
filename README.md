@@ -19,7 +19,7 @@ Skrip Node.js untuk mengunduh data cuaca harian (khususnya curah hujan) secara o
 
 1.  **Clone repositori ini:**
     ```bash
-    git clone [https://github.com/NAMA_USER_ANDA/NAMA_REPO_ANDA.git](https://github.com/NAMA_USER_ANDA/NAMA_REPO_ANDA.git)
+    git clone https://github.com/agungdunggio/scrap-data-bmkg.git
     cd NAMA_REPO_ANDA
     ```
 
